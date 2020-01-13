@@ -1,14 +1,14 @@
-var format = 'image/png';
-var map;
-var minX = 102.144584655762;
-var maxX = 109.469177246094;
-var minY = 8.38135528564453;
-var maxY = 23.3926944732666;
-var cenX = (minX + maxX) / 2;
-var cenY = (minY + maxY) / 2;
-var mapLat = cenY;
-var mapLng = cenX;
-var mapDefaultZoom = 6;
+let format = 'image/png';
+let map;
+let minX = 102.144584655762;
+let maxX = 109.469177246094;
+let minY = 8.38135528564453;
+let maxY = 23.3926944732666;
+let cenX = (minX + maxX) / 2;
+let cenY = (minY + maxY) / 2;
+let mapLat = cenY;
+let mapLng = cenX;
+let mapDefaultZoom = 6;
 
 function initialize_map() {
     //*
@@ -16,7 +16,7 @@ function initialize_map() {
         source: new ol.source.OSM({})
     });
     //*/
-    var layerCMR_adm1 = new ol.layer.Image({
+    let layerCMR_adm1 = new ol.layer.Image({
         source: new ol.source.ImageWMS({
             ratio: 1,
             url: 'http://localhost:8080/geoserver/btl/wms?',
@@ -28,7 +28,7 @@ function initialize_map() {
             }
         })
     });
-    var viewMap = new ol.View({
+    let viewMap = new ol.View({
         center: ol.proj.fromLonLat([mapLng, mapLat]),
         zoom: mapDefaultZoom
         //projection: projection
@@ -41,7 +41,7 @@ function initialize_map() {
     });
     //map.getView().fit(bounds, map.getSize());
 
-    var styles = {
+    let styles = {
         'MultiPolygon': new ol.style.Style({
             fill: new ol.style.Fill({
                 color: 'orange'
@@ -52,45 +52,45 @@ function initialize_map() {
             })
         })
     };
-    var styleFunction = function (feature) {
+    let styleFunction = function (feature) {
         return styles[feature.getGeometry().getType()];
     };
-    var vectorLayer = new ol.layer.Vector({
+    let vectorLayer = new ol.layer.Vector({
         //source: vectorSource,
         style: styleFunction
     });
     map.addLayer(vectorLayer);
 
     function createJsonObj(result) {
-        var geojsonObject = '{'
-            + '"type": "FeatureCollection",'
-            + '"crs": {'
-            + '"type": "name",'
-            + '"properties": {'
-            + '"name": "EPSG:4326"'
-            + '}'
-            + '},'
-            + '"features": [{'
-            + '"type": "Feature",'
-            + '"geometry": ' + result
-            + '}]'
-            + '}';
+        let geojsonObject = `{
+            "type": "FeatureCollection",
+            "crs": {
+                "type": "name",
+                "properties": {
+                    "name": "EPSG:4326"
+                }
+            },
+            "features": [{
+                "type": "Feature",
+                "geometry": ${result}
+            }]
+        }`;
         return geojsonObject;
     }
     function drawGeoJsonObj(paObjJson) {
-        var vectorSource = new ol.source.Vector({
+        let vectorSource = new ol.source.Vector({
             features: (new ol.format.GeoJSON()).readFeatures(paObjJson, {
                 dataProjection: 'EPSG:4326',
                 featureProjection: 'EPSG:3857'
             })
         });
-        var vectorLayer = new ol.layer.Vector({
+        let vectorLayer = new ol.layer.Vector({
             source: vectorSource
         });
         map.addLayer(vectorLayer);
     }
     function highLightGeoJsonObj(paObjJson) {
-        var vectorSource = new ol.source.Vector({
+        let vectorSource = new ol.source.Vector({
             features: (new ol.format.GeoJSON()).readFeatures(paObjJson, {
                 dataProjection: 'EPSG:4326',
                 featureProjection: 'EPSG:3857'
@@ -98,7 +98,7 @@ function initialize_map() {
         });
         vectorLayer.setSource(vectorSource);
         /*
-        var vectorLayer = new ol.layer.Vector({
+        let vectorLayer = new ol.layer.Vector({
             source: vectorSource
         });
         map.addLayer(vectorLayer);
@@ -106,32 +106,45 @@ function initialize_map() {
     }
     function highLightObj(result) {
         //alert("result: " + result);
-        var strObjJson = createJsonObj(result);
+        let strObjJson = createJsonObj(result);
         //alert(strObjJson);
-        var objJson = JSON.parse(strObjJson);
+        let objJson = JSON.parse(strObjJson);
         //alert(JSON.stringify(objJson));
         //drawGeoJsonObj(objJson);
         highLightGeoJsonObj(objJson);
     }
 
-    var myPoint = "";
+    let myPoint = "";
     map.on('singleclick', function (evt) {
         //alert("coordinate: " + evt.coordinate);
-        //var myPoint = 'POINT(12,5)';
-        var lonlat = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
-        var lon = lonlat[0];
-        var lat = lonlat[1];
+        //let myPoint = 'POINT(12,5)';
+        let lonlat = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
+        let lon = lonlat[0];
+        let lat = lonlat[1];
         myPoint = 'POINT(' + lon + ' ' + lat + ')';
         //alert("myPoint: " + myPoint);
         //*
         $.ajax({
             type: "POST",
-            url: "./CMR_pgsqlAPI.php",
+            url: "./api.php",
             //dataType: 'json',
             data: { functionname: 'getGeoCMRToAjax', paPoint: myPoint },
             success: function (result, status, erro) {
                 // $(".info").html(result);
                 highLightObj(result);
+            },
+            error: function (req, status, error) {
+                alert(req + " " + status + " " + error);
+            }
+        });
+        
+        $.ajax({
+            type: "POST",
+            url: "./api.php",
+            //dataType: 'json',
+            data: { functionname: 'getInfoCMRToAjax', paPoint: myPoint },
+            success: function (result, status, erro) {
+                $(".info").html(result);
             },
             error: function (req, status, error) {
                 alert(req + " " + status + " " + error);
@@ -143,7 +156,7 @@ function initialize_map() {
     $(".btn").click(function () {
         $.ajax({
             type: "POST",
-            url: "./CMR_pgsqlAPI.php",
+            url: "./api.php",
             //dataType: 'json',
             data: { functionname: 'getInfoCMRToAjax', paPoint: myPoint },
             success: function (result, status, erro) {

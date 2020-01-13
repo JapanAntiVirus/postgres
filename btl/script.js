@@ -128,7 +128,7 @@ function initialize_map() {
                 let s = `
                     <div>${data.type_3 || ''} ${data.name_3 || ''} -  ${data.type_2 || ''} ${data.name_2 || ''} ${data.type_1 || ''} ${data.name_1 || ''}</div>
                     <div>Chu vi: ${Math.round(data.chu_vi)} mét </div>
-                    <div>Diện tích: ${Math.round(data.dien_tich)} mét vuông </div>
+                    <div>Diện tích: ${Math.round(data.dien_tich)} km vuông </div>
                 `;
 
                 $(".info").html(s);

@@ -4,14 +4,17 @@ if (isset($_POST['functionname'])) {
     $paSRID = '4326';
     $paPoint = $_POST['paPoint'];
     $functionname = $_POST['functionname'];
+    $table = ['gadm36_vnm_1','gadm36_vnm_2','gadm36_vnm_3'];
+    $layer = $_POST['layer'];
+
 
     $aResult = "null";
     switch ($functionname) {
         case 'getGeoCMRToAjax':
-            $aResult = getGeoCMRToAjax($paPDO, $paSRID, $paPoint);
+            $aResult = getGeoCMRToAjax($paPDO, $paSRID, $paPoint, $table[$layer]);
             break;
         case 'getInfoCMRToAjax':
-            $aResult = getInfoCMRToAjax($paPDO, $paSRID, $paPoint);
+            $aResult = getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $table[$layer]);
             break;
     }
     echo $aResult;
@@ -53,7 +56,7 @@ function closeDB($paPDO)
     $paPDO = null;
 }
 
-function getGeoCMRToAjax($paPDO, $paSRID, $paPoint)
+function getGeoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 {
     //echo $paPoint;
     //echo "<br>";
@@ -61,7 +64,7 @@ function getGeoCMRToAjax($paPDO, $paSRID, $paPoint)
     //echo $paPoint;
     //echo "<br>";
     //$mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from \"CMR_adm1\" where ST_Within('SRID=4326;POINT(12 5)'::geometry,geom)";
-    $mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from \"gadm36_vnm_2\" where ST_Within('SRID=" . $paSRID . ";" . $paPoint . "'::geometry,geom)";
+    $mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from \"$tableName\" where ST_Within('SRID=" . $paSRID . ";" . $paPoint . "'::geometry,geom)";
     //echo $mySQLStr;
     //echo "<br><br>";
     $result = query($paPDO, $mySQLStr);
@@ -75,24 +78,29 @@ function getGeoCMRToAjax($paPDO, $paSRID, $paPoint)
         return "null";
 }
 
-function getInfoCMRToAjax($paPDO, $paSRID, $paPoint)
+function getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 {
-    //echo $paPoint;
-    //echo "<br>";
+    $result = null;
     $paPoint = str_replace(',', ' ', $paPoint);
-    //echo $paPoint;
-    //echo "<br>";
-    //$mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from \"CMR_adm1\" where ST_Within('SRID=4326;POINT(12 5)'::geometry,geom)";
-    //$mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from \"CMR_adm1\" where ST_Within('SRID=".$paSRID.";".$paPoint."'::geometry,geom)";
-    $mySQLStr = "SELECT name_2 from \"gadm36_vnm_2\" where ST_Within('SRID=" . $paSRID . ";" . $paPoint . "'::geometry,geom)";
-    //echo $mySQLStr;
-    //echo "<br><br>";
-    $result = query($paPDO, $mySQLStr);
+    switch($tableName){
+        case 'gadm36_vnm_1': 
+            $mySQLStr = "SELECT json_build_object('type_1', type_1, 'name_1',name_1, 'dien_tich', ST_Area(geom, false)/1000000, 'chu_vi', ST_Perimeter(geom, false)) as obj from $tableName where ST_Within('SRID=$paSRID; $paPoint '::geometry,geom)";
+            $result = query($paPDO, $mySQLStr);
+            break;
+        case 'gadm36_vnm_2': 
+            $mySQLStr = "SELECT json_build_object('name_1',name_1,'type_2', type_2, 'name_2', name_2, 'dien_tich', ST_Area(geom, false)/1000000, 'chu_vi', ST_Perimeter(geom, false)) as obj from $tableName where ST_Within('SRID=$paSRID; $paPoint '::geometry,geom)";
+            $result = query($paPDO, $mySQLStr);
+            break;
+        case 'gadm36_vnm_3': 
+            $mySQLStr = "SELECT json_build_object('name_1',name_1, 'name_2', name_2,'type_3',type_3,'name_3',name_3, 'dien_tich', ST_Area(geom, false)/1000000, 'chu_vi', ST_Perimeter(geom, false)) as obj from $tableName where ST_Within('SRID=$paSRID; $paPoint '::geometry,geom)";
+            $result = query($paPDO, $mySQLStr);
+            break;
+    }
+
+
 
     if ($result != null) {
-        foreach ($result as $item) {
-            return $item['name_2'];
-        }
+        return $result[0]['obj'];
     } else
         return "null";
 }

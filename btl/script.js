@@ -9,14 +9,12 @@ let cenY = (minY + maxY) / 2;
 let mapLat = cenY;
 let mapLng = cenX;
 let mapDefaultZoom = 6;
+let zoom = 6;
+let layerCMR_adm = [];
+let indexLayer = 0;
 
-function initialize_map() {
-    //*
-    layerBG = new ol.layer.Tile({
-        source: new ol.source.OSM({})
-    });
-    //*/
-    let layerCMR_adm1 = new ol.layer.Image({
+for(let i=0; i<3; i++){
+    layerCMR_adm.push(new ol.layer.Image({
         source: new ol.source.ImageWMS({
             ratio: 1,
             url: 'http://localhost:8080/geoserver/btl/wms?',
@@ -24,23 +22,26 @@ function initialize_map() {
                 'FORMAT': format,
                 'VERSION': '1.1.1',
                 STYLES: '',
-                LAYERS: 'gadm36_vnm_2',
+                LAYERS: `gadm36_vnm_${i+1}`,
             }
         })
+    }));
+}
+
+function initialize_map() {
+    layerBG = new ol.layer.Tile({
+        source: new ol.source.OSM({})
     });
     let viewMap = new ol.View({
         center: ol.proj.fromLonLat([mapLng, mapLat]),
         zoom: mapDefaultZoom
-        //projection: projection
     });
+
     map = new ol.Map({
         target: "map",
-        layers: [layerBG, layerCMR_adm1],
-        //layers: [layerCMR_adm1],
+        layers: [layerBG, layerCMR_adm[indexLayer]],
         view: viewMap
     });
-    //map.getView().fit(bounds, map.getSize());
-
     let styles = {
         'MultiPolygon': new ol.style.Style({
             fill: new ol.style.Fill({
@@ -56,7 +57,6 @@ function initialize_map() {
         return styles[feature.getGeometry().getType()];
     };
     let vectorLayer = new ol.layer.Vector({
-        //source: vectorSource,
         style: styleFunction
     });
     map.addLayer(vectorLayer);
@@ -77,18 +77,7 @@ function initialize_map() {
         }`;
         return geojsonObject;
     }
-    function drawGeoJsonObj(paObjJson) {
-        let vectorSource = new ol.source.Vector({
-            features: (new ol.format.GeoJSON()).readFeatures(paObjJson, {
-                dataProjection: 'EPSG:4326',
-                featureProjection: 'EPSG:3857'
-            })
-        });
-        let vectorLayer = new ol.layer.Vector({
-            source: vectorSource
-        });
-        map.addLayer(vectorLayer);
-    }
+
     function highLightGeoJsonObj(paObjJson) {
         let vectorSource = new ol.source.Vector({
             features: (new ol.format.GeoJSON()).readFeatures(paObjJson, {
@@ -97,40 +86,30 @@ function initialize_map() {
             })
         });
         vectorLayer.setSource(vectorSource);
-        /*
-        let vectorLayer = new ol.layer.Vector({
-            source: vectorSource
-        });
-        map.addLayer(vectorLayer);
-        */
+
     }
     function highLightObj(result) {
-        //alert("result: " + result);
         let strObjJson = createJsonObj(result);
-        //alert(strObjJson);
         let objJson = JSON.parse(strObjJson);
-        //alert(JSON.stringify(objJson));
-        //drawGeoJsonObj(objJson);
         highLightGeoJsonObj(objJson);
     }
 
     let myPoint = "";
     map.on('singleclick', function (evt) {
-        //alert("coordinate: " + evt.coordinate);
-        //let myPoint = 'POINT(12,5)';
         let lonlat = ol.proj.transform(evt.coordinate, 'EPSG:3857', 'EPSG:4326');
         let lon = lonlat[0];
         let lat = lonlat[1];
         myPoint = 'POINT(' + lon + ' ' + lat + ')';
-        //alert("myPoint: " + myPoint);
-        //*
+
+        //highlight vung click vao
         $.ajax({
             type: "POST",
             url: "./api.php",
             //dataType: 'json',
-            data: { functionname: 'getGeoCMRToAjax', paPoint: myPoint },
+            data: { functionname: 'getGeoCMRToAjax', paPoint: myPoint, layer: indexLayer },
             success: function (result, status, erro) {
                 // $(".info").html(result);
+                // console.log(result)
                 highLightObj(result);
             },
             error: function (req, status, error) {
@@ -138,19 +117,53 @@ function initialize_map() {
             }
         });
 
+        //lay thong tin vung duoc click
         $.ajax({
             type: "POST",
             url: "./api.php",
             //dataType: 'json',
-            data: { functionname: 'getInfoCMRToAjax', paPoint: myPoint },
+            data: { functionname: 'getInfoCMRToAjax', paPoint: myPoint, layer: indexLayer },
             success: function (result, status, erro) {
-                $(".info").html(result);
+                let data = JSON.parse(result);
+                let s = `
+                    <div>${data.type_3 || ''} ${data.name_3 || ''} -  ${data.type_2 || ''} ${data.name_2 || ''} ${data.type_1 || ''} ${data.name_1 || ''}</div>
+                    <div>Chu vi: ${Math.round(data.chu_vi)} mét </div>
+                    <div>Diện tích: ${Math.round(data.dien_tich)} mét vuông </div>
+                `;
+
+                $(".info").html(s);
             },
             error: function (req, status, error) {
                 alert(req + " " + status + " " + error);
             }
         });
-        //*/
 
     });
+
+    map.on('moveend', function(e) {
+        let newZoom = map.getView().getZoom();
+        if(zoom == newZoom){
+            return;
+        }
+        if(newZoom > 12){
+            indexLayer = 2;
+        }
+        else if(newZoom >= 10){
+            indexLayer = 1;
+        }
+        else{
+            indexLayer = 0
+        }
+        // console.log(indexLayer)
+        zoom = newZoom;
+        for(let i=0; i<3; i++){
+            map.removeLayer(layerCMR_adm[i]);
+        }
+        map.removeLayer(vectorLayer);
+        map.addLayer(layerCMR_adm[indexLayer])
+        map.addLayer(vectorLayer);
+
+        $('#layer').html(`gadm36_vnm_${indexLayer+1}`);
+      });
 };
+

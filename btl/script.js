@@ -137,7 +137,7 @@ function initialize_map() {
                 alert(req + " " + status + " " + error);
             }
         });
-        
+
         $.ajax({
             type: "POST",
             url: "./api.php",
@@ -152,19 +152,5 @@ function initialize_map() {
         });
         //*/
 
-    });
-    $(".btn").click(function () {
-        $.ajax({
-            type: "POST",
-            url: "./api.php",
-            //dataType: 'json',
-            data: { functionname: 'getInfoCMRToAjax', paPoint: myPoint },
-            success: function (result, status, erro) {
-                $(".info").html(result);
-            },
-            error: function (req, status, error) {
-                alert(req + " " + status + " " + error);
-            }
-        });
     });
 };

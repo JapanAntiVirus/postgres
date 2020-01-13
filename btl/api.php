@@ -7,7 +7,6 @@ if (isset($_POST['functionname'])) {
     $table = ['gadm36_vnm_1','gadm36_vnm_2','gadm36_vnm_3'];
     $layer = $_POST['layer'];
 
-
     $aResult = "null";
     switch ($functionname) {
         case 'getGeoCMRToAjax':
@@ -58,23 +57,14 @@ function closeDB($paPDO)
 
 function getGeoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 {
-    //echo $paPoint;
-    //echo "<br>";
     $paPoint = str_replace(',', ' ', $paPoint);
-    //echo $paPoint;
-    //echo "<br>";
-    //$mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from \"CMR_adm1\" where ST_Within('SRID=4326;POINT(12 5)'::geometry,geom)";
     $mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from \"$tableName\" where ST_Within('SRID=" . $paSRID . ";" . $paPoint . "'::geometry,geom)";
-    //echo $mySQLStr;
-    //echo "<br><br>";
+
     $result = query($paPDO, $mySQLStr);
 
-    if ($result != null) {
-        // Lặp kết quả
-        foreach ($result as $item) {
-            return $item['geo'];
-        }
-    } else
+    if ($result != null) 
+        return $result[0]['geo'];
+    else
         return "null";
 }
 
@@ -97,10 +87,8 @@ function getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
             break;
     }
 
-
-
-    if ($result != null) {
+    if ($result != null)
         return $result[0]['obj'];
-    } else
-        return "null";
+    else
+        return "{}";
 }

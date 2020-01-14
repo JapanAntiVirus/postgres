@@ -106,7 +106,7 @@ function getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 function getPlace($paPDO, $tableName, $layer, $stringSearch)
 {
     $result = null;
-    $mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from $tableName where name_$layer like '$stringSearch' or varname_$layer like '$stringSearch'";
+    $mySQLStr = "SELECT ST_AsGeoJson(ST_Union(geom)) as geo from $tableName where name_$layer like '$stringSearch' or varname_$layer like '$stringSearch'";
     $result = query($paPDO, $mySQLStr);
     if ($result != null)
         return $result[0]['geo'];

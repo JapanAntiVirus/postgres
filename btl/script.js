@@ -1,9 +1,9 @@
 let format = 'image/png';
 let map;
-let minX = 102.144584655762;
-let maxX = 109.469177246094;
-let minY = 8.38135528564453;
-let maxY = 23.3926944732666;
+let minX = 102.107963562012;
+let maxX = 109.505798339844;
+let minY = 8.30629825592041;
+let maxY = 23.4677505493164;
 let cenX = (minX + maxX) / 2;
 let cenY = (minY + maxY) / 2;
 let mapLat = cenY;
@@ -45,7 +45,16 @@ function initialize_map() {
     let styles = {
         'MultiPolygon': new ol.style.Style({
             fill: new ol.style.Fill({
-                color: 'orange'
+                color: '#d8d8c0'
+            }),
+            stroke: new ol.style.Stroke({
+                color: 'yellow',
+                width: 2
+            })
+        }),
+        'Polygon': new ol.style.Style({
+            fill: new ol.style.Fill({
+                color: '#d8d8c0'
             }),
             stroke: new ol.style.Stroke({
                 color: 'yellow',
@@ -91,6 +100,8 @@ function initialize_map() {
     function highLightObj(result) {
         let strObjJson = createJsonObj(result);
         let objJson = JSON.parse(strObjJson);
+        // objJson.type = 'MultiPolygon';
+        console.log(objJson.type)
         highLightGeoJsonObj(objJson);
     }
 
@@ -108,8 +119,6 @@ function initialize_map() {
             //dataType: 'json',
             data: { functionname: 'getGeoCMRToAjax', paPoint: myPoint, layer: indexLayer },
             success: function (result, status, erro) {
-                // $(".info").html(result);
-                // console.log(result)
                 highLightObj(result);
             },
             error: function (req, status, error) {
@@ -126,7 +135,7 @@ function initialize_map() {
             success: function (result, status, erro) {
                 let data = JSON.parse(result);
                 let s = `
-                    <div>${data.type_3 || ''} ${data.name_3 || ''} -  ${data.type_2 || ''} ${data.name_2 || ''} ${data.type_1 || ''} ${data.name_1 || ''}</div>
+                    <div>${data.type_3 || ''} ${data.name_3 || ''} - ${data.type_2 || ''} ${data.name_2 || ''} - ${data.type_1 || ''} ${data.name_1 || ''}</div>
                     <div>Chu vi: ${Math.round(data.chu_vi)} mét </div>
                     <div>Diện tích: ${Math.round(data.dien_tich)} km vuông </div>
                 `;
@@ -164,6 +173,30 @@ function initialize_map() {
         map.addLayer(vectorLayer);
 
         $('#layer').html(`gadm36_vnm_${indexLayer+1}`);
+      });
+
+      $('#btnSearch').click(function () { 
+          let stringSearch = $('#txtSearch').val();
+          stringSearch = stringSearch.trim().replace(/\s.|^./g, function(c) {
+            return c.toUpperCase();
+        });
+          console.log(stringSearch);
+          $.ajax({
+            type: "POST",
+            url: "./api.php",
+            //dataType: 'json',
+            data: { functionname: 'searchPlace', layer: indexLayer, stringSearch: stringSearch },
+            success: function (result, status, erro) {
+                result = result || '{"type": "MultiPolygon", "coordinates":[]}';
+                console.log(result)
+                highLightObj(result);
+            },
+            error: function (req, status, error) {
+                alert(req + " " + status + " " + error);
+            }
+        });
+
+
       });
 };
 

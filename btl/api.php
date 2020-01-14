@@ -2,21 +2,29 @@
 if (isset($_POST['functionname'])) {
     $paPDO = initDB();
     $paSRID = '4326';
-    $paPoint = $_POST['paPoint'];
+    $paPoint = [];
+    if (isset($_POST['paPoint']))
+        $paPoint = $_POST['paPoint'];
     $functionname = $_POST['functionname'];
-    $table = ['gadm36_vnm_1','gadm36_vnm_2','gadm36_vnm_3'];
+    $table = ['gadm36_vnm_1', 'gadm36_vnm_2', 'gadm36_vnm_3'];
     $layer = $_POST['layer'];
+    $stringSearch = '';
+    if (isset($_POST['stringSearch']))
+        $stringSearch = $_POST['stringSearch'];
 
-    $aResult = "null";
+    $result = "null";
     switch ($functionname) {
         case 'getGeoCMRToAjax':
-            $aResult = getGeoCMRToAjax($paPDO, $paSRID, $paPoint, $table[$layer]);
+            $result = getGeoCMRToAjax($paPDO, $paSRID, $paPoint, $table[$layer]);
             break;
         case 'getInfoCMRToAjax':
-            $aResult = getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $table[$layer]);
+            $result = getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $table[$layer]);
+            break;
+        case 'searchPlace':
+            $result = getPlace($paPDO, $table[$layer], $layer+1, $stringSearch);
             break;
     }
-    echo $aResult;
+    echo $result;
     closeDB($paPDO);
 }
 
@@ -62,7 +70,7 @@ function getGeoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 
     $result = query($paPDO, $mySQLStr);
 
-    if ($result != null) 
+    if ($result != null)
         return $result[0]['geo'];
     else
         return "null";
@@ -72,16 +80,16 @@ function getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 {
     $result = null;
     $paPoint = str_replace(',', ' ', $paPoint);
-    switch($tableName){
-        case 'gadm36_vnm_1': 
+    switch ($tableName) {
+        case 'gadm36_vnm_1':
             $mySQLStr = "SELECT json_build_object('type_1', type_1, 'name_1',name_1, 'dien_tich', ST_Area(geom, false)/1000000, 'chu_vi', ST_Perimeter(geom, false)) as obj from $tableName where ST_Within('SRID=$paSRID; $paPoint '::geometry,geom)";
             $result = query($paPDO, $mySQLStr);
             break;
-        case 'gadm36_vnm_2': 
+        case 'gadm36_vnm_2':
             $mySQLStr = "SELECT json_build_object('name_1',name_1,'type_2', type_2, 'name_2', name_2, 'dien_tich', ST_Area(geom, false)/1000000, 'chu_vi', ST_Perimeter(geom, false)) as obj from $tableName where ST_Within('SRID=$paSRID; $paPoint '::geometry,geom)";
             $result = query($paPDO, $mySQLStr);
             break;
-        case 'gadm36_vnm_3': 
+        case 'gadm36_vnm_3':
             $mySQLStr = "SELECT json_build_object('name_1',name_1, 'name_2', name_2,'type_3',type_3,'name_3',name_3, 'dien_tich', ST_Area(geom, false)/1000000, 'chu_vi', ST_Perimeter(geom, false)) as obj from $tableName where ST_Within('SRID=$paSRID; $paPoint '::geometry,geom)";
             $result = query($paPDO, $mySQLStr);
             break;
@@ -91,4 +99,15 @@ function getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
         return $result[0]['obj'];
     else
         return "{}";
+}
+
+function getPlace($paPDO, $tableName, $layer, $stringSearch)
+{
+    $result = null;
+    $mySQLStr = "SELECT ST_AsGeoJson(ST_Union(geom)) as geo from $tableName where name_$layer like '$stringSearch' or varname_$layer like '$stringSearch'";
+    $result = query($paPDO, $mySQLStr);
+    if ($result != null)
+        return $result[0]['geo'];
+    else
+        return "[]";
 }

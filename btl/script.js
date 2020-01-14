@@ -4,6 +4,10 @@ let minX = 102.107963562012;
 let maxX = 109.505798339844;
 let minY = 8.30629825592041;
 let maxY = 23.4677505493164;
+// let minX = 10.107963562012;
+// let maxX =70.505798339844;
+// let minY = 4.30629825592041;
+// let maxY = 13.4677505493164;
 let cenX = (minX + maxX) / 2;
 let cenY = (minY + maxY) / 2;
 let mapLat = cenY;
@@ -13,7 +17,7 @@ let zoom = 6;
 let layerCMR_adm = [];
 let indexLayer = 0;
 
-for(let i=0; i<3; i++){
+for (let i = 0; i < 3; i++) {
     layerCMR_adm.push(new ol.layer.Image({
         source: new ol.source.ImageWMS({
             ratio: 1,
@@ -22,7 +26,7 @@ for(let i=0; i<3; i++){
                 'FORMAT': format,
                 'VERSION': '1.1.1',
                 STYLES: '',
-                LAYERS: `gadm36_vnm_${i+1}`,
+                LAYERS: `gadm36_vnm_${i + 1}`,
             }
         })
     }));
@@ -101,7 +105,7 @@ function initialize_map() {
         let strObjJson = createJsonObj(result);
         let objJson = JSON.parse(strObjJson);
         // objJson.type = 'MultiPolygon';
-        console.log(objJson.type)
+
         highLightGeoJsonObj(objJson);
     }
 
@@ -111,13 +115,17 @@ function initialize_map() {
         let lon = lonlat[0];
         let lat = lonlat[1];
         myPoint = 'POINT(' + lon + ' ' + lat + ')';
-
-        //highlight vung click vao
+        console.log(myPoint)
+        //to mau vung click vao
         $.ajax({
             type: "POST",
             url: "./api.php",
             //dataType: 'json',
-            data: { functionname: 'getGeoCMRToAjax', paPoint: myPoint, layer: indexLayer },
+            data: {
+                functionname: 'getGeoCMRToAjax',
+                paPoint: myPoint,
+                layer: indexLayer
+            },
             success: function (result, status, erro) {
                 highLightObj(result);
             },
@@ -131,7 +139,11 @@ function initialize_map() {
             type: "POST",
             url: "./api.php",
             //dataType: 'json',
-            data: { functionname: 'getInfoCMRToAjax', paPoint: myPoint, layer: indexLayer },
+            data: {
+                functionname: 'getInfoCMRToAjax',
+                paPoint: myPoint,
+                layer: indexLayer
+            },
             success: function (result, status, erro) {
                 let data = JSON.parse(result);
                 let s = `
@@ -149,46 +161,55 @@ function initialize_map() {
 
     });
 
-    map.on('moveend', function(e) {
+    //zoom
+    map.on('moveend', function (e) {
         let newZoom = map.getView().getZoom();
-        if(zoom == newZoom){
+        if (zoom == newZoom) {
             return;
         }
-        if(newZoom > 12){
+        console.log(newZoom)
+        if (newZoom > 12) {
             indexLayer = 2;
         }
-        else if(newZoom >= 10){
+        else if (newZoom >= 10) {
             indexLayer = 1;
         }
-        else{
+        else {
             indexLayer = 0
         }
         // console.log(indexLayer)
         zoom = newZoom;
-        for(let i=0; i<3; i++){
+        for (let i = 0; i < 3; i++) {
             map.removeLayer(layerCMR_adm[i]);
         }
         map.removeLayer(vectorLayer);
+
         map.addLayer(layerCMR_adm[indexLayer])
         map.addLayer(vectorLayer);
 
-        $('#layer').html(`gadm36_vnm_${indexLayer+1}`);
-      });
+        $('#layer').html(`gadm36_vnm_${indexLayer + 1}`);
+    });
 
-      $('#btnSearch').click(function () { 
-          let stringSearch = $('#txtSearch').val();
-          stringSearch = stringSearch.trim().replace(/\s.|^./g, function(c) {
+    $('#btnSearch').click(function () {
+        let stringSearch = $('#txtSearch').val();
+
+        //chuyen ve chu hoa
+        stringSearch = stringSearch.trim().replace(/\s.|^./g, function (c) {
             return c.toUpperCase();
         });
-          console.log(stringSearch);
-          $.ajax({
+        console.log(stringSearch);
+        $.ajax({
             type: "POST",
             url: "./api.php",
             //dataType: 'json',
-            data: { functionname: 'searchPlace', layer: indexLayer, stringSearch: stringSearch },
+            data: {
+                functionname: 'searchPlace',
+                layer: indexLayer,
+                stringSearch: stringSearch
+            },
             success: function (result, status, erro) {
                 result = result || '{"type": "MultiPolygon", "coordinates":[]}';
-                console.log(result)
+                // console.log(result)
                 highLightObj(result);
             },
             error: function (req, status, error) {
@@ -197,6 +218,6 @@ function initialize_map() {
         });
 
 
-      });
+    });
 };
 

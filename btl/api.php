@@ -63,6 +63,7 @@ function closeDB($paPDO)
     $paPDO = null;
 }
 
+//to mau
 function getGeoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 {
     $paPoint = str_replace(',', ' ', $paPoint);
@@ -76,6 +77,7 @@ function getGeoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
         return "null";
 }
 
+//lay thong tin
 function getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 {
     $result = null;
@@ -104,7 +106,7 @@ function getInfoCMRToAjax($paPDO, $paSRID, $paPoint, $tableName)
 function getPlace($paPDO, $tableName, $layer, $stringSearch)
 {
     $result = null;
-    $mySQLStr = "SELECT ST_AsGeoJson(ST_Union(geom)) as geo from $tableName where name_$layer like '$stringSearch' or varname_$layer like '$stringSearch'";
+    $mySQLStr = "SELECT ST_AsGeoJson(geom) as geo from $tableName where name_$layer like '$stringSearch' or varname_$layer like '$stringSearch'";
     $result = query($paPDO, $mySQLStr);
     if ($result != null)
         return $result[0]['geo'];
